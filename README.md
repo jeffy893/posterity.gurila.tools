@@ -1,4 +1,4 @@
-# Posterity.gurila.tools
+# Posterity.gurila.tools : May the Tism be With You
 
 A tactical simulation engine that models social dynamics using the Lanchester Laws of conflict. This project is a Python 3.10+ rewrite of the legacy Java Android application "Posterity", designed to simulate the "dance" between two forces: **Bison** (Active/High Morale) and **Cattle** (Passive/Low Morale).
 
