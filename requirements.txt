@@ -1,0 +1,7 @@
+# Posterity.gurila.tools - Requirements
+# Requires Python 3.10 or later
+
+numpy>=1.21.0
+scipy>=1.7.0
+pytest>=6.0.0
+pytest-cov>=2.12.0
