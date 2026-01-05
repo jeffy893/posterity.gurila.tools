@@ -76,7 +76,9 @@ class TestTacticalBrain:
             termination_time=3.0,
             final_bison=80.0,
             final_cattle=120.0,
-            crossover_points=[1.5, 2.5]
+            crossover_points=[1.5, 2.5],
+            alpha_coefficients=[0.5, 0.4, 0.6, 0.3],
+            beta_coefficients=[0.3, 0.5, 0.4, 0.7]
         )
         
         recommendation = brain.analyze_simulation(result, original_heat=0.5, original_pace=0.5)
@@ -102,7 +104,9 @@ class TestTacticalBrain:
             termination_time=1.2,  # Very quick
             final_bison=40.0,
             final_cattle=0.1,
-            crossover_points=[]
+            crossover_points=[],
+            alpha_coefficients=[0.5, 0.4, 0.6, 0.3],
+            beta_coefficients=[0.3, 0.5, 0.4, 0.7]
         )
         
         recommendation = brain.analyze_simulation(result, original_heat=0.5, original_pace=0.5)
@@ -128,7 +132,9 @@ class TestTacticalBrain:
             termination_time=3.0,
             final_bison=70.0,
             final_cattle=130.0,
-            crossover_points=[1.5]
+            crossover_points=[1.5],
+            alpha_coefficients=[0.5, 0.4, 0.6, 0.3],
+            beta_coefficients=[0.3, 0.5, 0.4, 0.7]
         )
         
         recommendation = brain.analyze_simulation(result, original_heat=0.5, original_pace=0.5)
@@ -152,7 +158,9 @@ class TestTacticalBrain:
             termination_time=1.0,
             final_bison=120.0,
             final_cattle=80.0,
-            crossover_points=[]
+            crossover_points=[],
+            alpha_coefficients=[0.5, 0.4],
+            beta_coefficients=[0.3, 0.5]
         )
         
         recommendation = brain.analyze_simulation(result, original_heat=0.8, original_pace=0.5)  # High heat
@@ -176,7 +184,9 @@ class TestTacticalBrain:
             termination_time=1.0,
             final_bison=80.0,
             final_cattle=120.0,
-            crossover_points=[]
+            crossover_points=[],
+            alpha_coefficients=[0.5, 0.4],
+            beta_coefficients=[0.3, 0.5]
         )
         
         recommendation = brain.analyze_simulation(result, original_heat=0.3, original_pace=0.3)  # Low heat
@@ -195,7 +205,9 @@ class TestTacticalBrain:
             termination_time=3600.0,
             final_bison=80.0,
             final_cattle=20.0,  # Clear winner
-            crossover_points=[1000.0, 2000.0]
+            crossover_points=[1000.0, 2000.0],
+            alpha_coefficients=[0.5, 0.4],
+            beta_coefficients=[0.3, 0.5]
         )
         
         high_recommendation = brain.analyze_simulation(high_conf_result, original_heat=0.5, original_pace=0.5)
@@ -207,7 +219,9 @@ class TestTacticalBrain:
             termination_time=100.0,
             final_bison=50.0,
             final_cattle=50.0,  # No clear winner
-            crossover_points=[]
+            crossover_points=[],
+            alpha_coefficients=[0.5, 0.4],
+            beta_coefficients=[0.3, 0.5]
         )
         
         low_recommendation = brain.analyze_simulation(low_conf_result, original_heat=0.5, original_pace=0.5)

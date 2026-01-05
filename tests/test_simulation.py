@@ -153,7 +153,9 @@ class TestSimulationRunner:
             termination_time=3.0,
             final_bison=70.0,
             final_cattle=75.0,
-            crossover_points=[]
+            crossover_points=[],
+            alpha_coefficients=[0.5, 0.4, 0.6, 0.3],
+            beta_coefficients=[0.3, 0.5, 0.4, 0.7]
         )
         
         analysis = runner.analyze_trajectory(result)
@@ -205,7 +207,9 @@ class TestSimulationResult:
             termination_time=2.0,
             final_bison=80.0,
             final_cattle=85.0,
-            crossover_points=[1.5]
+            crossover_points=[1.5],
+            alpha_coefficients=[0.5, 0.4, 0.6],
+            beta_coefficients=[0.3, 0.5, 0.4]
         )
         
         assert result.duration == 2.0
@@ -221,7 +225,9 @@ class TestSimulationResult:
             termination_time=1.0,
             final_bison=60.0,
             final_cattle=40.0,
-            crossover_points=[]
+            crossover_points=[],
+            alpha_coefficients=[0.5],
+            beta_coefficients=[0.3]
         )
         assert result1.winner == 'bison'
         
@@ -232,7 +238,9 @@ class TestSimulationResult:
             termination_time=1.0,
             final_bison=40.0,
             final_cattle=60.0,
-            crossover_points=[]
+            crossover_points=[],
+            alpha_coefficients=[0.5],
+            beta_coefficients=[0.3]
         )
         assert result2.winner == 'cattle'
         
@@ -243,7 +251,9 @@ class TestSimulationResult:
             termination_time=1.0,
             final_bison=50.0,
             final_cattle=50.0,
-            crossover_points=[]
+            crossover_points=[],
+            alpha_coefficients=[0.5],
+            beta_coefficients=[0.3]
         )
         assert result3.winner is None
 

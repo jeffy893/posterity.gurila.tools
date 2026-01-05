@@ -27,9 +27,12 @@ import argparse
 import sys
 from typing import Optional
 import json
+from pathlib import Path
 
 from posterity.core.simulation import run_tactical_simulation
 from posterity.analysis.tactics import TacticalBrain, analyze_grocery_store_scenario
+from posterity.reporting import generate_simulation_report
+from posterity.scenarios import get_venue_preset, list_venues, create_dramatic_scenario, analyze_scenario_potential
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -39,10 +42,15 @@ def create_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python main.py --flux 0.5 --heat 0.8 --count 50
-  python main.py --flux 0.3 --heat 0.4 --pace 0.6 --count 75 --seed 42
-  python main.py --grocery-store
-  python main.py --flux 0.2 --heat 0.9 --count 100 --json
+  python3.10 main.py --flux 0.5 --heat 0.8 --count 50
+  python3.10 main.py --venue nightclub --seed 42
+  python3.10 main.py --dramatic --seed 777
+  python3.10 main.py --venue festival --analyze-complexity
+  python3.10 main.py --grocery-store
+  python3.10 main.py --flux 0.2 --heat 0.9 --count 100 --json
+
+Available venues: cafe, grocery_store, nightclub, public_event, office_party, 
+house_party, conference, festival, dramatic
         """
     )
     
@@ -96,6 +104,25 @@ Examples:
         help="Run the classic grocery store scenario (Low Heat, Low Pace)"
     )
     
+    parser.add_argument(
+        "--venue",
+        type=str,
+        choices=list_venues(),
+        help=f"Use venue-specific preset: {', '.join(list_venues())}"
+    )
+    
+    parser.add_argument(
+        "--dramatic",
+        action="store_true",
+        help="Generate parameters optimized for complex, dramatic scenarios"
+    )
+    
+    parser.add_argument(
+        "--analyze-complexity",
+        action="store_true",
+        help="Analyze the complexity potential of the given parameters"
+    )
+    
     # Output options
     parser.add_argument(
         "--json",
@@ -113,6 +140,18 @@ Examples:
         "--quiet", "-q",
         action="store_true",
         help="Quiet mode - only output the final recommendation"
+    )
+    
+    parser.add_argument(
+        "--no-report",
+        action="store_true",
+        help="Skip generating HTML/PDF report (only show console output)"
+    )
+    
+    parser.add_argument(
+        "--report-dir",
+        type=str,
+        help="Directory for report output (default: current directory)"
     )
     
     return parser
@@ -146,14 +185,14 @@ def validate_parameters(args: argparse.Namespace) -> bool:
     return True
 
 
-def run_simulation(args: argparse.Namespace) -> dict:
+def run_simulation(args: argparse.Namespace) -> tuple:
     """Run the tactical simulation and return results."""
     if args.grocery_store:
         # Run grocery store scenario
         recommendation = analyze_grocery_store_scenario()
         
         # Create a simplified result for grocery store
-        return {
+        results = {
             "scenario": "grocery_store",
             "parameters": {
                 "heat": 0.2,
@@ -169,6 +208,117 @@ def run_simulation(args: argparse.Namespace) -> dict:
                 "summary": str(recommendation)
             }
         }
+        
+        return results, None, recommendation
+    
+    elif args.venue:
+        # Use venue preset
+        preset = get_venue_preset(args.venue)
+        if not preset:
+            raise ValueError(f"Unknown venue: {args.venue}")
+        
+        # Generate parameters from preset
+        venue_params = preset.generate_parameters(args.seed)
+        
+        if not args.quiet:
+            print(f"Using {preset.name} venue preset:")
+            print(f"  {preset.description}")
+            print(f"Running tactical simulation...")
+            if args.verbose:
+                print(f"Generated parameters: {venue_params}")
+        
+        # Run simulation with venue parameters
+        result = run_tactical_simulation(
+            pace=venue_params['pace'],
+            flux=venue_params['flux'],
+            heat=venue_params['heat'],
+            count=venue_params['count'],
+            random_seed=args.seed,
+            max_hours=venue_params['max_hours']
+        )
+        
+        # Analyze with tactical brain
+        brain = TacticalBrain()
+        recommendation = brain.analyze_simulation(
+            result, 
+            original_heat=venue_params['heat'], 
+            original_pace=venue_params['pace']
+        )
+        
+        # Prepare results
+        results = {
+            "scenario": f"venue_{args.venue}",
+            "venue_preset": preset.name,
+            "venue_description": preset.description,
+            "parameters": venue_params,
+            "simulation": {
+                "duration": result.duration,
+                "termination_reason": result.termination_reason.value,
+                "num_crossovers": result.num_crossovers,
+                "winner": result.winner,
+                "final_bison": result.final_bison,
+                "final_cattle": result.final_cattle
+            },
+            "recommendation": {
+                "approach": recommendation.approach.value,
+                "target_group": recommendation.target_group.value,
+                "confidence": recommendation.confidence,
+                "reasoning": recommendation.reasoning,
+                "summary": str(recommendation)
+            }
+        }
+        
+        return results, result, recommendation
+    
+    elif args.dramatic:
+        # Generate dramatic scenario parameters
+        dramatic_params = create_dramatic_scenario(args.seed)
+        
+        if not args.quiet:
+            print("Generating dramatic scenario optimized for complex dynamics...")
+            if args.verbose:
+                print(f"Dramatic parameters: {dramatic_params}")
+        
+        # Run simulation with dramatic parameters
+        result = run_tactical_simulation(
+            pace=dramatic_params['pace'],
+            flux=dramatic_params['flux'],
+            heat=dramatic_params['heat'],
+            count=dramatic_params['count'],
+            random_seed=args.seed,
+            max_hours=dramatic_params['max_hours']
+        )
+        
+        # Analyze with tactical brain
+        brain = TacticalBrain()
+        recommendation = brain.analyze_simulation(
+            result, 
+            original_heat=dramatic_params['heat'], 
+            original_pace=dramatic_params['pace']
+        )
+        
+        # Prepare results
+        results = {
+            "scenario": "dramatic",
+            "parameters": dramatic_params,
+            "simulation": {
+                "duration": result.duration,
+                "termination_reason": result.termination_reason.value,
+                "num_crossovers": result.num_crossovers,
+                "winner": result.winner,
+                "final_bison": result.final_bison,
+                "final_cattle": result.final_cattle
+            },
+            "recommendation": {
+                "approach": recommendation.approach.value,
+                "target_group": recommendation.target_group.value,
+                "confidence": recommendation.confidence,
+                "reasoning": recommendation.reasoning,
+                "summary": str(recommendation)
+            }
+        }
+        
+        return results, result, recommendation
     
     else:
         # Run custom simulation
@@ -177,6 +327,19 @@ def run_simulation(args: argparse.Namespace) -> dict:
             if args.verbose:
                 print(f"Parameters: flux={args.flux}, heat={args.heat}, "
                       f"pace={args.pace}, count={args.count}")
+        
+        # Analyze complexity potential if requested
+        if args.analyze_complexity:
+            complexity_analysis = analyze_scenario_potential(
+                args.flux, args.heat, args.pace, args.count
+            )
+            if not args.quiet:
+                print("\nComplexity Analysis:")
+                print(f"  Complexity Score: {complexity_analysis['complexity_score']:.2f}")
+                print(f"  Double Crossover Probability: {complexity_analysis['double_crossover_probability']:.1%}")
+                print(f"  Single Crossover Probability: {complexity_analysis['single_crossover_probability']:.1%}")
+                print(f"  Annihilation Probability: {complexity_analysis['annihilation_probability']:.1%}")
+                print()
         
         # Run simulation
         result = run_tactical_simulation(
@@ -197,7 +360,7 @@ def run_simulation(args: argparse.Namespace) -> dict:
         )
         
         # Prepare results
-        return {
+        results = {
             "scenario": "custom",
             "parameters": {
                 "flux": args.flux,
@@ -223,6 +386,14 @@ def run_simulation(args: argparse.Namespace) -> dict:
                 "summary": str(recommendation)
             }
         }
+        
+        # Add complexity analysis to results if requested
+        if args.analyze_complexity:
+            results["complexity_analysis"] = analyze_scenario_potential(
+                args.flux, args.heat, args.pace, args.count
+            )
+        
+        return results, result, recommendation
 
 
 def format_output(results: dict, args: argparse.Namespace) -> str:
@@ -245,6 +416,14 @@ def format_output(results: dict, args: argparse.Namespace) -> str:
         # Scenario info
         if results["scenario"] == "grocery_store":
             output.append("\nScenario: Grocery Store (Low Heat, Low Pace)")
+        elif results["scenario"].startswith("venue_"):
+            venue_name = results.get("venue_preset", "Unknown Venue")
+            venue_desc = results.get("venue_description", "")
+            output.append(f"\nScenario: {venue_name}")
+            if venue_desc:
+                output.append(f"Description: {venue_desc}")
+        elif results["scenario"] == "dramatic":
+            output.append(f"\nScenario: Dramatic (Optimized for Complex Dynamics)")
         else:
             output.append(f"\nScenario: Custom Simulation")
         
@@ -275,6 +454,15 @@ def format_output(results: dict, args: argparse.Namespace) -> str:
         if args.verbose:
             output.append(f"\nReasoning:")
             output.append(f"  {rec['reasoning']}")
+            
+            # Add complexity analysis if available
+            if "complexity_analysis" in results:
+                comp = results["complexity_analysis"]
+                output.append(f"\nComplexity Analysis:")
+                output.append(f"  Complexity Score: {comp['complexity_score']:.2f}")
+                output.append(f"  Double Crossover Probability: {comp['double_crossover_probability']:.1%}")
+                output.append(f"  Single Crossover Probability: {comp['single_crossover_probability']:.1%}")
+                output.append(f"  Annihilation Probability: {comp['annihilation_probability']:.1%}")
         
         output.append("\n" + "=" * 60)
         
@@ -292,11 +480,47 @@ def main() -> int:
     
     try:
         # Run simulation
-        results = run_simulation(args)
+        results, simulation_result, recommendation = run_simulation(args)
         
         # Format and output results
         output = format_output(results, args)
         print(output)
+        
+        # Generate report if requested
+        if not args.no_report:
+            if not args.quiet:
+                print("\nGenerating simulation report...")
+            
+            try:
+                # Determine output directory
+                output_dir = Path(args.report_dir) if args.report_dir else Path.cwd()
+                
+                # Generate report
+                report_dir = generate_simulation_report(
+                    parameters=results["parameters"],
+                    simulation_result=simulation_result,
+                    recommendation=recommendation,
+                    trajectory=simulation_result.trajectory if simulation_result else None,
+                    alpha_coeffs=simulation_result.alpha_coefficients if simulation_result else None,
+                    beta_coeffs=simulation_result.beta_coefficients if simulation_result else None,
+                    output_dir=output_dir
+                )
+                
+                if not args.quiet:
+                    print(f"Report generated in: {report_dir}")
+                    print(f"  - HTML: {report_dir / 'report.html'}")
+                    print(f"  - PDF: {report_dir / 'report.pdf'}")
+                    if simulation_result and (report_dir / 'population_trajectory.png').exists():
+                        print(f"  - Charts: {report_dir / 'population_trajectory.png'}")
+                        if (report_dir / 'coefficient_evolution.png').exists():
+                            print(f"            {report_dir / 'coefficient_evolution.png'}")
+                    print(f"  - Data: {report_dir / 'raw_data.json'}")
+                
+            except Exception as e:
+                print(f"Warning: Could not generate report: {e}", file=sys.stderr)
+                if args.verbose:
+                    import traceback
+                    traceback.print_exc()
         
         return 0
         

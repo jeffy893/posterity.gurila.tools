@@ -50,6 +50,8 @@ class SimulationResult:
     final_bison: float
     final_cattle: float
     crossover_points: List[float]  # Times when populations crossed
+    alpha_coefficients: List[float]  # Alpha coefficient history
+    beta_coefficients: List[float]   # Beta coefficient history
     
     @property
     def duration(self) -> float:
@@ -148,8 +150,9 @@ class SimulationRunner:
         # Run simulation loop
         termination_reason = self._run_simulation_loop(max_time)
         
-        # Get final trajectory
+        # Get final trajectory and coefficient history
         trajectory = self.solver.get_trajectory()
+        alpha_coeffs, beta_coeffs = self.solver.get_coefficient_history()
         
         # Create result
         return SimulationResult(
@@ -158,7 +161,9 @@ class SimulationRunner:
             termination_time=self.solver.time,
             final_bison=self.solver.bison,
             final_cattle=self.solver.cattle,
-            crossover_points=self.crossover_history.copy()
+            crossover_points=self.crossover_history.copy(),
+            alpha_coefficients=alpha_coeffs,
+            beta_coefficients=beta_coeffs
         )
     
     def _run_simulation_loop(self, max_time: float) -> TerminationReason:

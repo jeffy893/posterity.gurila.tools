@@ -211,6 +211,8 @@ class LanchesterSolver:
         
         # History storage
         self.history: List[Tuple[float, float, float]] = []
+        self.alpha_history: List[float] = []
+        self.beta_history: List[float] = []
         self._record_state()
     
     def _record_state(self) -> None:
@@ -227,6 +229,10 @@ class LanchesterSolver:
         # Get current coefficients from Markov chains
         alpha = self.markov_alpha.transition()
         beta = self.markov_beta.transition()
+        
+        # Record coefficients
+        self.alpha_history.append(alpha)
+        self.beta_history.append(beta)
         
         # Compute derivatives
         dbison_dt = -beta * self.cattle
@@ -282,6 +288,8 @@ class LanchesterSolver:
         self.cattle = self.initial_cattle
         self.time = 0.0
         self.history.clear()
+        self.alpha_history.clear()
+        self.beta_history.clear()
         self.markov_alpha.reset()
         self.markov_beta.reset()
         self._record_state()
@@ -289,6 +297,10 @@ class LanchesterSolver:
     def get_trajectory(self) -> NDArray[np.float64]:
         """Get the complete trajectory as a numpy array."""
         return np.array(self.history)
+    
+    def get_coefficient_history(self) -> Tuple[List[float], List[float]]:
+        """Get the coefficient history."""
+        return self.alpha_history.copy(), self.beta_history.copy()
 
 
 def create_solver_from_params(
